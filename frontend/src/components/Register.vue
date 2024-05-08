@@ -1,0 +1,47 @@
+<script setup>
+
+import { ref } from 'vue'
+import axios from 'axios'
+import router from '@/router';
+
+const loading = ref(false)
+const form = ref({
+    name: '',
+    username: '',
+    password: ''
+})
+
+async function register() {
+    loading.value = true
+    try {
+        const result = await axios.post('http://localhost:3000/student', form.value)
+        console.log(result)
+        // router.push('/login')
+        loading.value = false
+    }
+    catch(error) {
+        console.log(error)
+        loading.value = false
+    }
+}
+
+</script>
+
+<template>
+
+    <v-form class="bg-grey pa-6" @submit.prevent="register">
+        <v-card class="py-6" width="80%" style="margin: auto;">
+            <v-card-title class="text-center text-h4">REGISTER</v-card-title>
+            <v-card-item>
+                <v-text-field class="mt-2" :error-messages="error" label="Name" v-model="form.name" density="comfortable" variant="outlined"></v-text-field>
+                <v-text-field class="mt-2" :error-messages="error" label="Username" v-model="form.username" density="comfortable" variant="outlined"></v-text-field>
+                <v-text-field label="Password" type="password" density="comfortable" v-model="form.password" variant="outlined"></v-text-field>
+            </v-card-item>
+            <v-card-actions>
+                <v-btn block color="blue" variant="flat" :loading="loading" type="submit">Register</v-btn>
+            </v-card-actions>
+            <p class="text-center mb-5">Already have an account?  <router-link to="/login">Login</router-link> </p>
+        </v-card>
+    </v-form>
+    
+</template>
