@@ -3,19 +3,55 @@
 import axios from 'axios'
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth-store'
+import { useRouter } from 'vue-router'
+import { io } from "socket.io-client"
 
+
+const router = useRouter()
 const authStore = useAuthStore()
 const search = ref('')
 const messages = ref([])
+const message = ref('')
+
+const socket = io("http://localhost:3001");
+
+socket.on("connect", () => {
+	console.log("ohayo"); // x8WIv7-mJelg7on_ALbx
+	console.log(socket.id); // x8WIv7-mJelg7on_ALbx
+});
 
 onMounted(() => {
+	getAllMessages()
+
+})
+
+const getAllMessages = () => {
 	axios.get('http://localhost:3000/')
 	.then((res) => {
 		messages.value = res.data
 	}).catch((err) => {
 		console.error(err)
 	})
-})
+}
+
+const logout = () => {
+	authStore.authUser = null
+	router.push('/login')
+	// authStore.logout()
+}
+
+const sendMessage = () => {
+	axios.post('http://localhost:3000/send-message', {
+		user_id: authStore.authUser.id,
+		message: message.value
+	}).then((res) => {
+		if(res.status == 201) {
+			getAllMessages
+		}
+	}).catch((err) => {
+		console.error(err)
+	})
+}
 
 </script>
 
@@ -95,7 +131,7 @@ onMounted(() => {
 								</v-btn>
 							</template>
 							<v-list>
-								<v-list-item class="text-red" prepend-icon="mdi-logout">
+								<v-list-item @click="logout" class="text-red" prepend-icon="mdi-logout">
 									<v-list-item-title>Logout</v-list-item-title>
 								</v-list-item>
 							</v-list>
@@ -104,7 +140,7 @@ onMounted(() => {
 				</v-list-item>
 				<v-virtual-scroll :height="450" :items="messages">
 					<template v-slot:default="{ item }">
-						<div v-if="item.user_id !== authStore.authUser.user_id">
+						<div v-if="item.user_id !== authStore.authUser?.id">
 							<span class="ms-7">{{ item.name }}</span>
 							<v-row class="mx-2 my-1">
 								<v-col cols="auto" class="bg-secondary" style="border-radius: 30px;">
@@ -131,11 +167,14 @@ onMounted(() => {
 						</v-row>
 					</template>
 				</v-virtual-scroll>
-				<v-text-field label="Abc" class="mt-4">
-					<template v-slot:append-inner>
-						<v-btn icon="mdi-send" flat></v-btn>
-					</template>
-				</v-text-field>
+				<v-form @submit.prevent="sendMessage">
+					<v-text-field label="Abc" class="mt-4" v-model="message">
+						<template v-slot:append-inner>
+							<v-btn icon="mdi-send" type="submit" flat></v-btn>
+						</template>
+					</v-text-field>
+					<v-btn icon="mdi-send" type="submit" flat></v-btn>
+				</v-form>
 			</v-col>
 		</v-row>
 	</v-container>

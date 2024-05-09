@@ -2,10 +2,8 @@ import { defineStore } from "pinia"
 
 export const useAuthStore = defineStore('auth', {
     state: () => ({ 
-        authUser: {
-            name: 'Joren',
-            user_id: 1
-        },
+        authUser: null,
+        token: null,
         count: 0,
     }),
     getters: {
@@ -14,6 +12,9 @@ export const useAuthStore = defineStore('auth', {
     actions: {
         increment() {
             this.count++
-        }
+        },
+        logout() {
+            this.authUser = null
+        },
     }
 })

@@ -2,8 +2,12 @@
 
 import { ref } from 'vue'
 import axios from 'axios'
-import router from '@/router';
+import { useAuthStore } from '@/stores/auth-store'
+import { useRouter } from 'vue-router'
 
+const authStore = useAuthStore()
+const router = useRouter()
+const error = ref(null)
 const loading = ref(false)
 const form = ref({
     name: '',
@@ -14,9 +18,16 @@ const form = ref({
 async function register() {
     loading.value = true
     try {
-        const result = await axios.post('http://localhost:3000/student', form.value)
+        const result = await axios.post('http://localhost:3000/register', form.value)
         console.log(result)
-        // router.push('/login')
+        if(result.status == 200) {
+            authStore.authUser = result.data.user
+            authStore.token = result.data.token
+            router.push('/')
+        }
+        else {
+            error.value = result.data
+        }
         loading.value = false
     }
     catch(error) {
@@ -32,6 +43,7 @@ async function register() {
     <v-form class="bg-grey pa-6" @submit.prevent="register">
         <v-card class="py-6" width="80%" style="margin: auto;">
             <v-card-title class="text-center text-h4">REGISTER</v-card-title>
+            {{ error }}
             <v-card-item>
                 <v-text-field class="mt-2" :error-messages="error" label="Name" v-model="form.name" density="comfortable" variant="outlined"></v-text-field>
                 <v-text-field class="mt-2" :error-messages="error" label="Username" v-model="form.username" density="comfortable" variant="outlined"></v-text-field>

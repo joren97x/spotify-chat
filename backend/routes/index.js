@@ -2,12 +2,13 @@ import express from 'express'
 
 const router = express.Router()
 
-import { index } from '../controllers/ChatController.js'
+import { getAllMessages, storeMessage } from '../controllers/ChatController.js'
 import { login, register } from '../controllers/AuthController.js'
 
-router.get('/', index)
+router.get('/', getAllMessages)
 router.post('/login', login)
 router.post('/register', register)
+router.post('/send-message', storeMessage)
 // router.get('/student/:id', showStudentById)
 // router.put('/student/:id', updateStudent)
 // router.post('/student', createStudent)
