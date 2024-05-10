@@ -14,6 +14,7 @@ const messages = ref([])
 const message = ref('')
 const virtualScoller = ref(null)
 const activeUsers = ref(0)
+const tracks = ref([])
 
 const socket = io("http://localhost:3001");
 
@@ -32,8 +33,61 @@ socket.on('chat message', () => {
 	getAllMessages()
 })
 
-onMounted(() => {
+onMounted(async () => {
 	getAllMessages()
+
+
+	// const token = 'BQBG3H5_eQUnEDPjK6jf8rKeWCO5fQZyVsZXnQVAWjnmWrXOpn7vBtlNiDmbIiq3SLsL685i3oRIHJg77Nze5Q9FkODBb-b0egV9iS-i1Xie4V0IMoSb72hgoqdcVSsHyp8Xy-iDjO87oXyuCTstRter-a6IGwzjaIT-OLSvUuhMYeTfeEAqFoHdZkLNqd5TxPM19FpTtuoGIXCM-oshqD7pkAuVwxFxaVkV8IUYgHBaftX7Hlr6XSyIk4uEbxXZrR5DSYAdpu07nueXhSWUetb3';
+	// async function fetchWebApi(endpoint, method, body) {
+	// const res = await fetch(`https://api.spotify.com/${endpoint}`, {
+	// 	headers: {
+	// 	Authorization: `Bearer ${token}`,
+	// 	},
+	// 	method,
+	// 	body:JSON.stringify(body)
+	// });
+	// return await res.json();
+	// }
+
+	// async function getTopTracks(){
+	// // Endpoint reference : https://developer.spotify.com/documentation/web-api/reference/get-users-top-artists-and-tracks
+	// return (await fetchWebApi(
+	// 	'v1/me/top/tracks?time_range=long_term&limit=5', 'GET'
+	// )).items;
+	// }
+
+	// const topTracks = await getTopTracks();
+	// console.log(
+	// topTracks?.map(
+	// 	({name, artists}) =>
+	// 	`${name} by ${artists.map(artist => artist.name).join(', ')}`
+	// )
+	// );
+
+	
+
+	var client_id = '3986226f0e2d41b590779b28ce14a56a';
+	var client_secret = '146395d6cb6d4e0093984a67141b5bed';
+
+	axios.post('https://accounts.spotify.com/api/token', 
+		`grant_type=client_credentials&client_id=${client_id}&client_secret=${client_secret}&scope=user-top-read`, 
+		{
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded'
+			}
+		}
+	)
+	.then(response => {
+		console.log(response.data)
+		authStore.access_token = response.data.access_token
+		getTracks()
+	})
+	.catch(error => {
+		console.error('Error:', error.response.data);
+	});
+
+
+
 })
 
 const getAllMessages = () => {
@@ -86,12 +140,29 @@ const shareSong = () => {
 	})
 }
 
+const getTracks = () => {
+	console.log(authStore.access_token)
+	axios.get(`https://api.spotify.com/v1/me/top/tracks`, {
+		headers: {
+			Authorization: `Bearer ${authStore.access_token}`
+		}
+	})
+	.then((res) => {
+		tracks.value = res.data
+		console.log(res)
+	})
+	.catch((err) => {
+		console.log(err)
+	})
+
+}
 
 </script>
 
 <template>
 	<v-container fluid>
 		<v-row>
+		{{ tracks }}
 			<v-col cols="8">
 				<v-text-field label="Type a song name..." v-model="search">
 					<template v-slot:append-inner>
