@@ -9,24 +9,35 @@ const io = new Server(server, {
   cors: {
     origin: "http://localhost:8080"
   }
-});
+})
 
 app.use(cors())
 
 // app.get('/hello', (req, res) => {
 //   res.json({ message: 'hello' })
 // });
-
+let users = 0
 io.on('connection', (socket) => {
-    console.log('a user connected');
+  users++
+  console.log('a user connected');
+  console.log('active users', users);
 
-    socket.on('disconnect', () => {
-        console.log('user disconnected');
-    });
+  io.emit('active users', users)
 
-    socket.on('chat message', (msg) => {
-        io.emit('chat message', msg);
-    });
+  socket.on('disconnect', () => {
+    users--
+    console.log('user disconnected');
+    console.log('active users', users);
+    io.emit('active users', users)
+  });
+
+  socket.on('connect', () => {
+    
+  })
+
+  socket.on('chat message', (msg) => {
+    io.emit('chat message', msg);
+  });
 
 });
 

@@ -1,7 +1,7 @@
 <script setup>
 
 import axios from 'axios'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { useAuthStore } from '@/stores/auth-store'
 import { useRouter } from 'vue-router'
 import { io } from "socket.io-client"
@@ -12,46 +12,80 @@ const authStore = useAuthStore()
 const search = ref('')
 const messages = ref([])
 const message = ref('')
+const virtualScoller = ref(null)
+const activeUsers = ref(0)
 
 const socket = io("http://localhost:3001");
 
 socket.on("connect", () => {
-	console.log("ohayo"); // x8WIv7-mJelg7on_ALbx
-	console.log(socket.id); // x8WIv7-mJelg7on_ALbx
+	console.log("ohayo");
+	console.log(socket.id); 
 });
+
+socket.on("active users", (users) => {
+	console.log("active users yy"); 
+	console.log(users); 
+	activeUsers.value = users
+});
+
+socket.on('chat message', () => {
+	getAllMessages()
+})
 
 onMounted(() => {
 	getAllMessages()
-
 })
 
 const getAllMessages = () => {
 	axios.get('http://localhost:3000/')
 	.then((res) => {
 		messages.value = res.data
+		virtualScoller.value.scrollToIndex(messages.value.length)
 	}).catch((err) => {
 		console.error(err)
 	})
 }
 
 const logout = () => {
-	authStore.authUser = null
+	
 	router.push('/login')
-	// authStore.logout()
+	authStore.logout()
 }
 
 const sendMessage = () => {
+	console.log('fordago')
 	axios.post('http://localhost:3000/send-message', {
 		user_id: authStore.authUser.id,
+		type: 0,
 		message: message.value
 	}).then((res) => {
+		console.log(res)
 		if(res.status == 201) {
-			getAllMessages
+			socket.emit('chat message')
+			message.value = ''
 		}
 	}).catch((err) => {
 		console.error(err)
 	})
 }
+
+const shareSong = () => {
+	const trackId = '5GUYJTQap5F3RDQiCOJhrS'
+	axios.post('http://localhost:3000/send-message', {
+		user_id: authStore.authUser.id,
+		type: 1,
+		message: trackId
+	}).then((res) => {
+		console.log(res)
+		if(res.status == 201) {
+			socket.emit('chat message')
+			message.value = ''
+		}
+	}).catch((err) => {
+		console.error(err)
+	})
+}
+
 
 </script>
 
@@ -96,7 +130,7 @@ const sendMessage = () => {
 							<td>
 								13:00
 								<v-btn flat icon="mdi-play"></v-btn>
-								<v-btn flat icon="mdi-share"></v-btn>
+								<v-btn flat icon="mdi-share" @click="shareSong"></v-btn>
 							</td>
 						</tr>
 					</tbody>
@@ -113,7 +147,7 @@ const sendMessage = () => {
 				<v-list-item>
 					<div class="pa-3">
 					<span class="font-weight-bold text-h6"> Chats </span> 
-					<v-badge color="error" content="2">
+					<v-badge color="error" :content="activeUsers">
 						<v-icon>mdi-play</v-icon>
 					</v-badge>
 				</div>
@@ -138,11 +172,28 @@ const sendMessage = () => {
 						</v-menu>
 					</template>
 				</v-list-item>
-				<v-virtual-scroll :height="450" :items="messages">
+				<v-virtual-scroll :height="450" :items="messages" ref="virtualScoller">
 					<template v-slot:default="{ item }">
-						<div v-if="item.user_id !== authStore.authUser?.id">
-							<span class="ms-7">{{ item.name }}</span>
-							<v-row class="mx-2 my-1">
+						<div v-if="item.type" class="text-center">
+							{{ item.name }}
+							<iframe class="" style="border-radius:12px" :src="`https://open.spotify.com/embed/track/${item.message}?utm_source=generator`" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+						</div>
+						<div v-else>
+							<div v-if="item.user_id !== authStore.authUser?.id">
+								<span class="ms-7">{{ item.name }}</span>
+								<v-row class="mx-2 my-1">
+									<v-col cols="auto" class="bg-secondary" style="border-radius: 30px;">
+										<p class="mx-3 text-light py-1">
+											{{ item.message }}
+											<br>
+											<span class="font-weight-light" style="font-size: 15px;">
+												{{ item.created_at }}
+											</span>
+										</p>
+									</v-col>
+								</v-row>
+							</div>
+							<v-row class="mx-2 my-1" justify="end" v-else>
 								<v-col cols="auto" class="bg-secondary" style="border-radius: 30px;">
 									<p class="mx-3 text-light py-1">
 										{{ item.message }}
@@ -154,26 +205,14 @@ const sendMessage = () => {
 								</v-col>
 							</v-row>
 						</div>
-						<v-row class="mx-2 my-1" justify="end" v-else>
-							<v-col cols="auto" class="bg-secondary" style="border-radius: 30px;">
-								<p class="mx-3 text-light py-1">
-									{{ item.message }}
-									<br>
-									<span class="font-weight-light" style="font-size: 15px;">
-										{{ item.created_at }}
-									</span>
-								</p>
-							</v-col>
-						</v-row>
 					</template>
 				</v-virtual-scroll>
 				<v-form @submit.prevent="sendMessage">
 					<v-text-field label="Abc" class="mt-4" v-model="message">
 						<template v-slot:append-inner>
-							<v-btn icon="mdi-send" type="submit" flat></v-btn>
+							<v-btn icon="mdi-send" type="submit" @click="sendMessage" flat></v-btn>
 						</template>
 					</v-text-field>
-					<v-btn icon="mdi-send" type="submit" flat></v-btn>
 				</v-form>
 			</v-col>
 		</v-row>

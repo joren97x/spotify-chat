@@ -10,8 +10,8 @@ const router = useRouter()
 const error = ref(null)
 const loading = ref(false)
 const form = ref({
-    username: null,
-    password: null
+    username: 'joren',
+    password: 'asdasd'
 })
 
 async function login() {

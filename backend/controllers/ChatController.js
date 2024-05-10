@@ -1,7 +1,7 @@
 import db from '../config/database.js'
 
 export const getAllMessages = (req, res) => {
-    db.query("SELECT messages.*, users.username, users.name, users.id FROM messages INNER JOIN users ON messages.user_id = users.id", (err, result) => {
+    db.query("SELECT messages.*, users.username, users.name FROM messages INNER JOIN users ON messages.user_id = users.id", (err, result) => {
         if(err) {
             console.log(err)
             res.send(err)
@@ -22,7 +22,7 @@ export const storeMessage = (req, res) => {
         }
         else {
             console.log(result)
-            return res.status(201)
+            return res.status(201).json({ message: 'Message sent successfully' })
         }
     })
 }
