@@ -15,6 +15,9 @@ const message = ref('')
 const virtualScoller = ref(null)
 const activeUsers = ref(0)
 const tracks = ref([])
+const q = ref('Daniel Caesar')
+const currentSong = ref('3A2yGHWIzmGEIolwonU69h')
+const play = ref(false)
 
 const socket = io("http://localhost:3001");
 
@@ -36,38 +39,8 @@ socket.on('chat message', () => {
 onMounted(async () => {
 	getAllMessages()
 
-
-	// const token = 'BQBG3H5_eQUnEDPjK6jf8rKeWCO5fQZyVsZXnQVAWjnmWrXOpn7vBtlNiDmbIiq3SLsL685i3oRIHJg77Nze5Q9FkODBb-b0egV9iS-i1Xie4V0IMoSb72hgoqdcVSsHyp8Xy-iDjO87oXyuCTstRter-a6IGwzjaIT-OLSvUuhMYeTfeEAqFoHdZkLNqd5TxPM19FpTtuoGIXCM-oshqD7pkAuVwxFxaVkV8IUYgHBaftX7Hlr6XSyIk4uEbxXZrR5DSYAdpu07nueXhSWUetb3';
-	// async function fetchWebApi(endpoint, method, body) {
-	// const res = await fetch(`https://api.spotify.com/${endpoint}`, {
-	// 	headers: {
-	// 	Authorization: `Bearer ${token}`,
-	// 	},
-	// 	method,
-	// 	body:JSON.stringify(body)
-	// });
-	// return await res.json();
-	// }
-
-	// async function getTopTracks(){
-	// // Endpoint reference : https://developer.spotify.com/documentation/web-api/reference/get-users-top-artists-and-tracks
-	// return (await fetchWebApi(
-	// 	'v1/me/top/tracks?time_range=long_term&limit=5', 'GET'
-	// )).items;
-	// }
-
-	// const topTracks = await getTopTracks();
-	// console.log(
-	// topTracks?.map(
-	// 	({name, artists}) =>
-	// 	`${name} by ${artists.map(artist => artist.name).join(', ')}`
-	// )
-	// );
-
-	
-
 	var client_id = '3986226f0e2d41b590779b28ce14a56a';
-	var client_secret = '146395d6cb6d4e0093984a67141b5bed';
+	var client_secret = '146395d6cb6d4e0093984a67141b5bed'
 
 	axios.post('https://accounts.spotify.com/api/token', 
 		`grant_type=client_credentials&client_id=${client_id}&client_secret=${client_secret}&scope=user-top-read`, 
@@ -123,8 +96,12 @@ const sendMessage = () => {
 	})
 }
 
-const shareSong = () => {
-	const trackId = '5GUYJTQap5F3RDQiCOJhrS'
+const playSong = (trackId) => {
+	currentSong.value = trackId
+	play.value = true
+}
+
+const shareSong = (trackId) => {
 	axios.post('http://localhost:3000/send-message', {
 		user_id: authStore.authUser.id,
 		type: 1,
@@ -142,14 +119,15 @@ const shareSong = () => {
 
 const getTracks = () => {
 	console.log(authStore.access_token)
-	axios.get(`https://api.spotify.com/v1/me/top/tracks`, {
+	axios.get(`https://api.spotify.com/v1/search?q=${q.value}&type=track&limit=5`, {
 		headers: {
 			Authorization: `Bearer ${authStore.access_token}`
 		}
 	})
 	.then((res) => {
-		tracks.value = res.data
+		tracks.value = res.data.tracks.items
 		console.log(res)
+		q.value = ''
 	})
 	.catch((err) => {
 		console.log(err)
@@ -162,13 +140,14 @@ const getTracks = () => {
 <template>
 	<v-container fluid>
 		<v-row>
-		{{ tracks }}
 			<v-col cols="8">
-				<v-text-field label="Type a song name..." v-model="search">
-					<template v-slot:append-inner>
-						<v-btn flat icon="mdi-magnify"></v-btn>
-					</template>
-				</v-text-field>
+				<v-form @submit.prevent="getTracks">
+					<v-text-field label="Type a song name..." v-model="q">
+						<template v-slot:append-inner>
+							<v-btn flat type="submit" icon="mdi-magnify" @click="getTracks"></v-btn>
+						</template>
+					</v-text-field>
+				</v-form>
 				<v-table title="Songs">
 					<thead>
 						<tr>
@@ -182,31 +161,49 @@ const getTracks = () => {
 								Title
 							</th>
 							<th class="text-center">
+								Album
+							</th>
+							<th class="text-center">
 								Actions
 							</th>
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="n in 5" :key="n" class="text-center">
-							<td>{{ n }}</td>
+						<tr v-for="(track, index) in tracks" :key="index" class="text-center">
+							<td>{{ index }}</td>
 							<td class="text-left">
-								<v-list-item title="Shouldnt be" subtitle="hello">
+								<v-list-item :title="track.name">
+									<template v-slot:subtitle>
+										<p>
+											<span v-for="artist in track.artists" :key="artist.id">
+												<a :href="artist.external_urls.spotify" target="_blank" rel="noopener noreferrer">
+													{{ artist.name }},
+												</a>
+											</span>
+										</p>
+									</template>
 									<template v-slot:prepend>
 										<v-avatar rounded="0">
-											<v-img cover src="https://upload.wikimedia.org/wikipedia/en/a/a0/Blonde_-_Frank_Ocean.jpeg"></v-img>
+											<v-img cover :src="track.album.images[0].url"></v-img>
 										</v-avatar>
 									</template>
 								</v-list-item>
 							</td>
 							<td>
-								13:00
-								<v-btn flat icon="mdi-play"></v-btn>
-								<v-btn flat icon="mdi-share" @click="shareSong"></v-btn>
+								<a :href="track.album.external_urls.spotify" target="_blank" rel="noopener noreferrer">
+									{{ track.album.name }}
+								</a>
+							</td>
+							<td>
+								{{ `${Math.floor(Math.floor(track.duration_ms / 1000) / 60)}:${Math.floor(track.duration_ms / 1000) % 60}` }}
+								<v-btn flat icon="mdi-play" id="playButton" @click="playSong(track.id)"></v-btn>
+								<v-btn flat icon="mdi-share" @click="shareSong(track.id)"></v-btn>
 							</td>
 						</tr>
 					</tbody>
 				</v-table>
-                <iframe class="mt-4" style="border-radius:12px" src="https://open.spotify.com/embed/track/2kIUILBPlz4exX9xIFS275?utm_source=generator" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+				{{ play }}
+                <iframe class="mt-4" id="spotifyIframe" style="border-radius:12px" :src="`https://open.spotify.com/embed/track/${currentSong}?utm_source=generator&autoplay=1`" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
 			</v-col>
 			<v-col cols="4">
 				<!-- <div>
