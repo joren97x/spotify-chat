@@ -1,5 +1,6 @@
 ## setupppp  
-so yea make sure to create a database named 'spotify-chat' and import the "spotify-chat.sql" at the root folder  
+so yea make sure to create a database named 'spotify-chat' and import the "spotify-chat.sql" at the root folder   
+use gitbash terminal  
 
 ### frontend
 ```bash
