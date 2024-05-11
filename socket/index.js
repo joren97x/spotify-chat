@@ -39,6 +39,10 @@ io.on('connection', (socket) => {
     io.emit('chat message', msg);
   });
 
+  socket.on('delete message', (msg) => {
+    io.emit('delete message', msg);
+  });
+
 });
 
 

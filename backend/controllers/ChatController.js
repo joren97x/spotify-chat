@@ -36,7 +36,7 @@ export const deleteMessage = (req, res) => {
         }
         else {
             console.log(result)
-            return res.status(201).json({ message: 'Message sent successfully' })
+            return res.status(201).json({ message: 'Message deleted successfully' })
         }
     })
 }

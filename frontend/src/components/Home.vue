@@ -5,10 +5,12 @@ import { ref, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth-store'
 import { useRouter } from 'vue-router'
 import { io } from "socket.io-client"
+import { formatDistance } from 'date-fns'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const snackbar = ref(false)
+const snackbarMessage = ref('')
 const messages = ref([])
 const message = ref('')
 const virtualScoller = ref(null)
@@ -23,18 +25,15 @@ const chosenMessage = ref(null)
 
 const socket = io("http://localhost:3001");
 
-socket.on("connect", () => {
-	console.log("ohayo");
-	console.log(socket.id); 
-});
-
 socket.on("active users", (users) => {
-	console.log("active users yy"); 
-	console.log(users); 
 	activeUsers.value = users
 });
 
 socket.on('chat message', () => {
+	getAllMessages()
+})
+
+socket.on('delete message', () => {
 	getAllMessages()
 })
 
@@ -65,15 +64,13 @@ onMounted(async () => {
 		console.error('Error:', error.response.data);
 	});
 
-
-
 })
 
 const getAllMessages = () => {
 	axios.get('http://localhost:3000/')
 	.then((res) => {
 		messages.value = res.data
-		virtualScoller.value.scrollToIndex(messages.value.length)
+		// virtualScoller.value.scrollToIndex(messages.value.length - 1)
 	}).catch((err) => {
 		console.error(err)
 	})
@@ -117,6 +114,7 @@ const shareSong = (trackId) => {
 		if(res.status == 201) {
 			socket.emit('chat message')
 			message.value = ''
+			snackbarMessage.value = 'You shared a song'
 			snackbar.value = true
 		}
 	}).catch((err) => {
@@ -147,6 +145,7 @@ const showDialog = (messageId) => {
 }
 
 const deleteMessage = () => {
+	console.log('delete that shit bruh')
 	axios.delete(`http://localhost:3000/delete-message/${chosenMessage.value}`, {
 		headers: {
 			Authorization: `Bearer ${authStore.token}`
@@ -154,6 +153,9 @@ const deleteMessage = () => {
 	})
 	.then((res) => {
 		console.log(res)
+		dialog.value = false
+		snackbarMessage.value = 'You deleted a message'
+		socket.emit('delete message')
 	})
 	.catch((err) => {
 		console.error(err)
@@ -173,7 +175,7 @@ const deleteMessage = () => {
 						</template>
 					</v-text-field>
 				</v-form>
-				<v-table title="Songs" hover>
+				<v-table title="Songs" hover class="border">
 					<thead>
 						<tr>
 							<th colspan="1" class="font-weight-bold text-h6">Songs</th>
@@ -251,7 +253,7 @@ const deleteMessage = () => {
 				</v-table>
                 <iframe class="mt-4" id="spotifyIframe" style="border-radius:12px" :src="`https://open.spotify.com/embed/track/${currentSong}?utm_source=generator&autoplay=1`" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
 			</v-col>
-			<v-col cols="12" md="4" lg="4" sm="12" xs="12">
+			<v-col cols="12" md="4" lg="4" sm="12" xs="12" class="border">
 				<!-- <div>
 					<span class="font-weight-bold text-h6"> Chats </span> 
 					<v-badge color="error" content="2">
@@ -289,26 +291,63 @@ const deleteMessage = () => {
 				<v-virtual-scroll :height="450" :items="messages" ref="virtualScoller">
 					<template v-slot:default="{ item }">
 						<div v-if="item.type" class="text-center">
-							{{ item.name }}
-							<iframe class="" style="border-radius:12px" :src="`https://open.spotify.com/embed/track/${item.message}?utm_source=generator`" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
-						</div>
-						<div v-else>
-							<div v-if="item.user_id !== authStore.authUser?.id">
-								<span class="ms-7">{{ item.name }}</span>
-								<v-row class="mx-2 my-1">
-									<v-col cols="auto" class="bg-grey" style="border-radius: 30px;">
+							<div v-if="item.deleted_at">
+								<v-row :justify="item.user_id == authStore.authUser?.id ? 'end' : ''" class="mx-2 my-1">
+									<v-col cols="auto" class="border" style="border-radius: 30px;">
 										<p class="mx-3 text-light py-1">
-											{{ item.message }}
+											<i>{{ item.name }} unsint a message.</i>
 											<br>
 											<span class="font-weight-light" style="font-size: 15px;">
-												{{ item.created_at }}
+												{{ formatDistance(new Date(), item.created_at) }}
 											</span>
 										</p>
 									</v-col>
 								</v-row>
 							</div>
+							<div v-else>
+								<div v-if="item.user_id == authStore.authUser?.id">
+									{{ item.name }}
+									<v-menu>
+										<template v-slot:activator="{ props }">
+											<v-btn icon="mdi-dots-horizontal" color="blue" v-bind="props" size="xs"></v-btn>
+										</template>
+
+										<v-list>
+											<!-- <v-list-item title="Edit"></v-list-item> -->
+											<v-list-item title="Unsend" @click="showDialog(item.id)"></v-list-item>
+										</v-list>
+									</v-menu>
+								</div>
+								<iframe class="" style="border-radius:12px" :src="`https://open.spotify.com/embed/track/${item.message}?utm_source=generator`" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+							</div>
+						</div>
+						<div v-else>
+							<div v-if="item.user_id !== authStore.authUser?.id">
+								<span class="ms-7">{{ item.name }}</span>
+								<v-row class="mx-2 my-1">
+									<v-col cols="auto" class="bg-grey" style="border-radius: 30px;" v-if="!item.deleted_at">
+										<p class="mx-3 text-light py-1">
+											{{ item.message }}
+											<br>
+											<span class="font-weight-light" style="font-size: 15px;">
+												{{ formatDistance(new Date(), item.created_at) }}
+											</span>
+										</p>
+									</v-col>
+									<v-col cols="auto" class="border" style="border-radius: 30px;" v-else>
+										<p class="mx-3 text-light py-1">
+											<i>{{ item.name }} unsint a message.</i>
+											<br>
+											<span class="font-weight-light" style="font-size: 15px;">
+												{{ formatDistance(new Date(), item.created_at) }}
+											</span>
+										</p>
+									</v-col>
+								</v-row>
+								
+							</div>
 							<v-row class="mx-2 my-1" justify="end" v-else style="position: relative;">
-								<v-col cols="auto" class="bg-secondary" style="border-radius: 30px;">
+								<v-col cols="auto" class="bg-secondary" style="border-radius: 30px;" v-if="!item.deleted_at">
 									<div style="position: absolute; top: -12px; right: 0; z-index: 1;">
 										<v-menu>
 											<template v-slot:activator="{ props }">
@@ -325,7 +364,16 @@ const deleteMessage = () => {
 										{{ item.message }}
 										<br>
 										<span class="font-weight-light" style="font-size: 15px;">
-											{{ item.created_at }}
+											{{ formatDistance(new Date(), item.created_at) }}
+										</span>
+									</p>
+								</v-col>
+								<v-col cols="auto" class="border" style="border-radius: 30px;" v-else>
+									<p class="mx-3 text-light py-1">
+										<i>You unsint a message.</i>
+										<br>
+										<span class="font-weight-light" style="font-size: 15px;">
+											{{ formatDistance(new Date(), item.created_at) }}
 										</span>
 									</p>
 								</v-col>
@@ -343,7 +391,7 @@ const deleteMessage = () => {
 			</v-col>
 		</v-row>
 		<v-snackbar v-model="snackbar" location="top">
-			You shared a track
+			{{ snackbarMessage }}
 		</v-snackbar>
 		<v-dialog v-model="dialog">
 			<v-card title="Unsend message">
@@ -361,9 +409,14 @@ const deleteMessage = () => {
 
 <style scoped>
 
-	tr:hover {
-		cursor: pointer;
-		
+	a {
+		text-decoration: none;
+		color: black
+	}
+
+	a:hover {
+		text-decoration: underline;
+
 	}
 
 </style>
