@@ -32,6 +32,8 @@ async function register() {
     }
     catch(error) {
         console.log(error)
+        error.value = error.response.data.message
+
         loading.value = false
     }
 }
@@ -40,7 +42,7 @@ async function register() {
 
 <template>
 
-    <v-form class="bg-grey pa-6" @submit.prevent="register">
+    <v-form class="bg-grey pa-6" style="height: 100vh" @submit.prevent="register">
         <v-card class="py-6" width="80%" style="margin: auto;">
             <v-card-title class="text-center text-h4">REGISTER</v-card-title>
             {{ error }}

@@ -2,13 +2,14 @@ import express from 'express'
 
 const router = express.Router()
 
-import { getAllMessages, storeMessage } from '../controllers/ChatController.js'
+import { getAllMessages, storeMessage, deleteMessage } from '../controllers/ChatController.js'
 import { login, register } from '../controllers/AuthController.js'
 
 router.get('/', getAllMessages)
 router.post('/login', login)
 router.post('/register', register)
 router.post('/send-message', storeMessage)
+router.delete('/delete-message/:id', deleteMessage)
 // router.get('/student/:id', showStudentById)
 // router.put('/student/:id', updateStudent)
 // router.post('/student', createStudent)

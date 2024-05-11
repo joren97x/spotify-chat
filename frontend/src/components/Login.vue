@@ -10,8 +10,8 @@ const router = useRouter()
 const error = ref(null)
 const loading = ref(false)
 const form = ref({
-    username: 'joren',
-    password: 'asdasd'
+    username: '',
+    password: ''
 })
 
 async function login() {
@@ -29,9 +29,10 @@ async function login() {
         }
         loading.value = false
     }
-    catch(error) {
+    catch(err) {
         error.value = "Invalid credentials"
-        console.log(error)
+        form.value.password = ''
+        console.log(err)
         loading.value = false
     }
 }
@@ -39,7 +40,7 @@ async function login() {
 
 <template>
 
-    <v-form class="bg-grey pa-6" @submit.prevent="login">
+    <v-form class="bg-grey pa-6" style="height: 100vh" @submit.prevent="login">
         <v-card class="py-6" width="50%" style="margin: auto;">
             <v-card-title class="text-center text-h4 my-4">LOGIN</v-card-title>
             <v-card-item>
