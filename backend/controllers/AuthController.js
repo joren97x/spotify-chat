@@ -4,6 +4,7 @@ import bcrypt from 'bcrypt'
 
 export const login = (req, res) => {
     console.log(req.body)
+    console.log("somone tried to login")
     db.query("SELECT * FROM users WHERE username = ?", req.body.username, async (err, result) => {
         if(err) {
             return res.status(500).json({ message: "Internal Server error" })

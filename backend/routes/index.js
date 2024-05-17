@@ -1,28 +1,33 @@
 import express from 'express'
+import jwt from 'jsonwebtoken'
+
 
 const router = express.Router()
 
 import { getAllMessages, storeMessage, deleteMessage } from '../controllers/ChatController.js'
 import { login, register } from '../controllers/AuthController.js'
 
-router.get('/', getAllMessages)
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization']
+    console.log(authHeader)
+    const token = authHeader && authHeader.split(' ')[1]
+    console.log("hello ferson from middleware! your token is: " + token)
+    if(token == null) return res.sendStatus(401)
+
+    jwt.verify(token, 'secret_key_or_smn', (err, user) => {
+        if(err) return res.sendStatus(403)
+        req.user = user
+        next()
+    })
+}
+
+router.get('/', authenticateToken, getAllMessages)
 router.post('/login', login)
 router.post('/register', register)
-router.post('/send-message', storeMessage)
-router.delete('/delete-message/:id', deleteMessage)
-// router.get('/student/:id', showStudentById)
-// router.put('/student/:id', updateStudent)
-// router.post('/student', createStudent)
-// router.post('/login', authenticate)
-// router.delete('/student/:id', deleteStudent)
-// router.post('/schedule', createSchedule)
-// router.get('/schedule', getSchedule)
-// router.post('/attendance', insertAttendance)
-// router.post('/attendance/time-in', timeIn)
-// router.put('/attendance/time-out/:id', timeOut)
-// router.get('/attendance/:id', showAttendanceById)
-// router.delete('/attendance/:id', deleteAttendance)
-// router.get('/attendance', showAllAttendace)
-// router.get('/attendance/today/:id', showAttendanceToday)
+router.post('/send-message', authenticateToken, storeMessage)
+router.delete('/delete-message/:id', authenticateToken, deleteMessage)
+
+
+
 
 export default router

@@ -26,6 +26,7 @@ async function register() {
             router.push('/')
         }
         else {
+            console.log(result)
             error.value = result.data
         }
         loading.value = false

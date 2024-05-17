@@ -67,7 +67,11 @@ onMounted(async () => {
 })
 
 const getAllMessages = () => {
-	axios.get('http://localhost:3000/')
+	axios.get('http://localhost:3000/', {
+		headers: {
+			Authorization: `Bearer ${authStore.token}`
+		}
+	})
 	.then((res) => {
 		messages.value = res.data
 		// virtualScoller.value.scrollToIndex(messages.value.length - 1)
@@ -88,6 +92,10 @@ const sendMessage = () => {
 		user_id: authStore.authUser.id,
 		type: 0,
 		message: message.value
+	}, {
+		headers: {
+			Authorization: `Bearer ${authStore.token}`
+		}
 	}).then((res) => {
 		console.log(res)
 		if(res.status == 201) {
@@ -109,6 +117,10 @@ const shareSong = (trackId) => {
 		user_id: authStore.authUser.id,
 		type: 1,
 		message: trackId
+	}, {
+		headers: {
+			Authorization: `Bearer ${authStore.token}`
+		}
 	}).then((res) => {
 		console.log(res)
 		if(res.status == 201) {
