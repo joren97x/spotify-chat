@@ -87,7 +87,6 @@ const logout = () => {
 }
 
 const sendMessage = () => {
-	console.log('fordago')
 	axios.post('http://localhost:3000/send-message', {
 		user_id: authStore.authUser.id,
 		type: 0,
@@ -157,7 +156,6 @@ const showDialog = (messageId) => {
 }
 
 const deleteMessage = () => {
-	console.log('delete that shit bruh')
 	axios.delete(`http://localhost:3000/delete-message/${chosenMessage.value}`, {
 		headers: {
 			Authorization: `Bearer ${authStore.token}`
